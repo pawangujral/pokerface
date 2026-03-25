@@ -21,7 +21,15 @@ import {
 
 import { firebaseConfig } from './firebase-config.js';
 const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+
+let db;
+try {
+    db = getDatabase(app);
+} catch (e) {
+    console.error('Firebase Realtime Database failed to initialize. ' +
+        'Ensure FIREBASE_DATABASE_URL is set correctly in GitHub secrets.', e.message);
+    db = null;
+}
 
 let analytics = null;
 try {
