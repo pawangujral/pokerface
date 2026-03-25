@@ -38,6 +38,9 @@ jobs:
           };
           SCRIPT
 
+      - name: Remove gitignore so generated files are included in artifact
+        run: rm .gitignore
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
