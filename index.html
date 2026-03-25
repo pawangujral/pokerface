@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planning Poker — Free Online Scrum Estimation Tool | No Ads, No Sign-up</title>
+    <meta name="description" content="Free online planning poker tool for agile teams. Estimate story points together in real-time. No ads, no sign-up required — just create a session and start estimating.">
+    <meta name="keywords" content="planning poker, scrum poker, story point estimation, agile estimation, free planning poker, sprint planning tool, scrum estimation, team estimation, fibonacci estimation, poker planning online">
+    <meta name="author" content="PokerFace">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://pawangujral.github.io/pokerface/">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Planning Poker — Free Online Estimation Tool">
+    <meta property="og:description" content="Estimate story points together in real-time. Free, no ads, no sign-up required.">
+    <meta property="og:url" content="https://pawangujral.github.io/pokerface/">
+    <meta property="og:site_name" content="PokerFace">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Planning Poker — Free Online Estimation Tool">
+    <meta name="twitter:description" content="Estimate story points together in real-time. Free, no ads, no sign-up required.">
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "PokerFace — Planning Poker",
+        "description": "Free online planning poker tool for agile teams. Estimate story points together in real-time with no ads and no sign-up.",
+        "url": "https://pawangujral.github.io/pokerface/",
+        "applicationCategory": "ProjectManagement",
+        "operatingSystem": "Any",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        },
+        "featureList": ["Real-time estimation", "No sign-up required", "No ads", "Fibonacci & custom scales", "Instant session sharing"]
+    }
+    </script>
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Landing Page -->
+    <div id="landing-page" class="page">
+        <div class="container">
+            <h1>Show us your poker face!</h1>
+            <p class="subtitle">Estimate together, ship faster</p>
+
+            <div class="card">
+                <button id="btn-create" class="btn btn-primary btn-large">Create Session</button>
+                <div class="divider"><span>or</span></div>
+                <div class="join-group">
+                    <input type="text" id="input-session-code" placeholder="Enter session code" maxlength="20">
+                    <button id="btn-join" class="btn btn-secondary">Join</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Name Entry Page -->
+    <div id="name-page" class="page hidden">
+        <div class="container">
+            <h1>&#9824; Planning Poker</h1>
+            <div class="card">
+                <h2>What's your name?</h2>
+                <div class="name-group">
+                    <input type="text" id="input-name" placeholder="Enter your name" maxlength="30" autocomplete="off">
+                    <button id="btn-enter" class="btn btn-primary">Enter</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session Room -->
+    <div id="session-page" class="page hidden">
+        <div class="container">
+            <header class="session-header">
+                <h1>&#9824; Planning Poker</h1>
+                <div class="session-info">
+                    <span id="session-code-display" class="session-code"></span>
+                    <button id="btn-copy-link" class="btn btn-small" title="Copy invite link">&#128203; Copy Link</button>
+                </div>
+            </header>
+
+            <div class="session-layout">
+                <!-- Participants Panel -->
+                <div class="participants-panel">
+                    <h3>Participants</h3>
+                    <ul id="participants-list"></ul>
+                </div>
+
+                <!-- Main Area -->
+                <div class="main-area">
+                    <!-- Action Buttons -->
+                    <div class="actions">
+                        <button id="btn-reveal" class="btn btn-primary">Show Votes</button>
+                        <button id="btn-new-round" class="btn btn-secondary">New Round</button>
+                    </div>
+
+                    <!-- Results (shown after reveal) -->
+                    <div id="results-panel" class="results-panel hidden">
+                        <div class="result-stat">
+                            <span class="stat-label">Average</span>
+                            <span id="stat-average" class="stat-value">-</span>
+                        </div>
+                        <div class="result-stat">
+                            <span class="stat-label">Consensus</span>
+                            <span id="stat-consensus" class="stat-value">-</span>
+                        </div>
+                    </div>
+
+                    <!-- Estimation Cards -->
+                    <div class="estimation-section">
+                        <h3>Pick your estimate</h3>
+                        <div id="estimation-cards" class="estimation-cards">
+                            <!-- Cards injected by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notification -->
+    <div id="toast" class="toast hidden"></div>
+
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
