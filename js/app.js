@@ -193,7 +193,13 @@ async function enterSession(sessionId) {
     }
 
     currentPid = getParticipantId();
-    await joinSession(sessionId, name);
+    try {
+        await joinSession(sessionId, name);
+    } catch (e) {
+        toast('Failed to join session');
+        console.error(e);
+        return;
+    }
     showPage($session);
 
     if (unsubscribe) unsubscribe();
@@ -221,10 +227,16 @@ $btnCreate.addEventListener('click', async () => {
 $btnJoin.addEventListener('click', async () => {
     const code = $inputCode.value.trim();
     if (!code) { toast('Enter a session code'); return; }
-    const exists = await sessionExists(code);
-    if (!exists) { toast('Session not found'); return; }
-    logEvent(analytics, 'session_joined', { session_id: code });
-    await enterSession(code);
+    if (!db) { toast('Firebase is not configured. Check deployment secrets.'); return; }
+    try {
+        const exists = await sessionExists(code);
+        if (!exists) { toast('Session not found'); return; }
+        logEvent(analytics, 'session_joined', { session_id: code });
+        await enterSession(code);
+    } catch (e) {
+        toast('Failed to join session');
+        console.error(e);
+    }
 });
 
 $inputCode.addEventListener('keydown', (e) => {
@@ -236,10 +248,15 @@ $btnEnter.addEventListener('click', async () => {
     if (!name) { toast('Enter your name'); return; }
     saveName(name);
     currentPid = getParticipantId();
-    await joinSession(currentSessionId, name);
-    showPage($session);
-    if (unsubscribe) unsubscribe();
-    unsubscribe = subscribeSession(currentSessionId, onSessionUpdate);
+    try {
+        await joinSession(currentSessionId, name);
+        showPage($session);
+        if (unsubscribe) unsubscribe();
+        unsubscribe = subscribeSession(currentSessionId, onSessionUpdate);
+    } catch (e) {
+        toast('Failed to join session');
+        console.error(e);
+    }
 });
 
 $inputName.addEventListener('keydown', (e) => {
@@ -268,15 +285,24 @@ async function init() {
     $inputName.value = getSavedName();
 
     // Best-effort cleanup
-    cleanupExpiredSessions().catch(() => {});
+    if (db) cleanupExpiredSessions().catch(() => {});
 
     // Check URL for existing session
     const hashId = getSessionIdFromHash();
     if (hashId) {
-        const exists = await sessionExists(hashId);
-        if (exists) {
-            await enterSession(hashId);
+        if (!db) {
+            toast('Firebase is not configured. Check deployment secrets.');
+            showPage($landing);
             return;
+        }
+        try {
+            const exists = await sessionExists(hashId);
+            if (exists) {
+                await enterSession(hashId);
+                return;
+            }
+        } catch (e) {
+            console.error(e);
         }
         toast('Session not found');
         location.hash = '';
