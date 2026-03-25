@@ -25,7 +25,7 @@ jobs:
 
       - name: Inject Firebase config
         run: |
-          cat > js/firebase-config.js << 'SCRIPT'
+          cat > js/firebase-config.js << 'EOF'
           export const firebaseConfig = {
               apiKey: "${{ secrets.FIREBASE_API_KEY }}",
               authDomain: "${{ secrets.FIREBASE_AUTH_DOMAIN }}",
@@ -36,7 +36,7 @@ jobs:
               appId: "${{ secrets.FIREBASE_APP_ID }}",
               measurementId: "${{ secrets.FIREBASE_MEASUREMENT_ID }}",
           };
-          SCRIPT
+          EOF
 
       - name: Remove gitignore so generated files are included in artifact
         run: rm .gitignore
