@@ -13,7 +13,7 @@ import {
     newRound,
     cleanupExpiredSessions,
 } from './session.js';
-import { analytics, logEvent } from './firebase.js';
+import { analytics, logEvent, db } from './firebase.js';
 
 // ─── DOM refs ───
 const $landing   = document.getElementById('landing-page');
@@ -201,6 +201,10 @@ async function enterSession(sessionId) {
 }
 
 $btnCreate.addEventListener('click', async () => {
+    if (!db) {
+        toast('Firebase is not configured. Check deployment secrets.');
+        return;
+    }
     $btnCreate.disabled = true;
     try {
         const id = await createSession();

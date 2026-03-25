@@ -23,6 +23,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Validate required secrets
+        run: |
+          missing=()
+          [ -z "${{ secrets.FIREBASE_API_KEY }}" ]            && missing+=("FIREBASE_API_KEY")
+          [ -z "${{ secrets.FIREBASE_DATABASE_URL }}" ]       && missing+=("FIREBASE_DATABASE_URL")
+          [ -z "${{ secrets.FIREBASE_PROJECT_ID }}" ]         && missing+=("FIREBASE_PROJECT_ID")
+          [ -z "${{ secrets.FIREBASE_APP_ID }}" ]             && missing+=("FIREBASE_APP_ID")
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "ERROR: Missing required GitHub secrets: ${missing[*]}"
+            echo "Please add these secrets in Settings → Secrets → Actions."
+            exit 1
+          fi
+
       - name: Inject Firebase config
         run: |
           cat > js/firebase-config.js << 'SCRIPT'
