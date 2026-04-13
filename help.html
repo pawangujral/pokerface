@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Help — PokerFace Planning Poker</title>
+    <meta name="description" content="Learn how to use PokerFace — roles, timer, spectator mode, keyboard shortcuts, and more.">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .help-page {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 40px 20px 60px;
+        }
+
+        .help-page h1 {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .help-page .subtitle {
+            color: var(--text-muted);
+            margin-bottom: 40px;
+        }
+
+        .help-page a.back-link {
+            color: var(--primary-hover);
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: inline-block;
+            margin-bottom: 24px;
+        }
+
+        .help-page a.back-link:hover {
+            text-decoration: underline;
+        }
+
+        .help-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+
+        .help-section h2 {
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            color: var(--primary-hover);
+        }
+
+        .help-section p,
+        .help-section li {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.7;
+        }
+
+        .help-section ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .help-section li {
+            padding: 4px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .help-section li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 12px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--primary);
+        }
+
+        .help-section strong {
+            color: var(--text);
+        }
+
+        .kbd {
+            display: inline-block;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1px 7px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: var(--text);
+        }
+
+        .steps {
+            counter-reset: step;
+            list-style: none;
+            padding: 0;
+        }
+
+        .steps li {
+            padding-left: 32px;
+            position: relative;
+            counter-increment: step;
+        }
+
+        .steps li::before {
+            content: counter(step);
+            position: absolute;
+            left: 0;
+            top: 4px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="help-page">
+        <a href="./" class="back-link">&larr; Back to PokerFace</a>
+        <h1>&#9824; PokerFace Help</h1>
+        <p class="subtitle">Everything you need to know to run a smooth estimation session.</p>
+
+        <!-- Quick Start -->
+        <div class="help-section">
+            <h2>Quick Start</h2>
+            <ol class="steps">
+                <li><strong>Create a session</strong> — click "Create Session" on the home page.</li>
+                <li><strong>Enter your name</strong> and <strong>pick your role</strong> (Developer, QA, DevOps/SRE, Designer, or Business).</li>
+                <li><strong>Share the link</strong> — click "Copy Link" and send it to your team.</li>
+                <li><strong>Pick your estimate</strong> — tap a Fibonacci card (0, 1, 2, 3, 5, 8, 13, 21, ?, or &#9749;).</li>
+                <li><strong>Reveal votes</strong> — once everyone has voted, click "Show Votes".</li>
+                <li><strong>Discuss & repeat</strong> — click "New Round" when ready for the next story.</li>
+            </ol>
+        </div>
+
+        <!-- Roles -->
+        <div class="help-section">
+            <h2>Roles &amp; Grouped Estimation</h2>
+            <p>When joining, you choose a role. This affects how results are displayed:</p>
+            <ul>
+                <li><strong>Participants are grouped by role</strong> in the sidebar — each role gets its own card showing the member count.</li>
+                <li><strong>After reveal</strong>, you see per-role stats: each group's average and consensus (Agreement / Close / Discuss).</li>
+                <li><strong>Total Estimate</strong> is the sum of each role's average. For example, if Developers average 5 and QA averages 3, the total is 8 points — representing the combined effort for the ticket.</li>
+            </ul>
+        </div>
+
+        <!-- Timer -->
+        <div class="help-section">
+            <h2>Timer</h2>
+            <p>Keep estimation rounds focused with a shared countdown timer.</p>
+            <ul>
+                <li>Pick a duration from the dropdown (30s, 1:00, 1:30, or 2:00) and click <strong>Start</strong>.</li>
+                <li>The timer is <strong>synced for all participants</strong> — everyone sees the same countdown.</li>
+                <li>The progress bar turns <strong>yellow at 50%</strong> remaining and <strong>pulses red at 20%</strong>.</li>
+                <li>When time runs out, it shows <strong>"Time's up!"</strong> and auto-hides after 3 seconds.</li>
+                <li>The timer resets automatically when you start a new round.</li>
+            </ul>
+        </div>
+
+        <!-- Spectator Mode -->
+        <div class="help-section">
+            <h2>Spectator Mode</h2>
+            <p>Perfect for PMs, stakeholders, or anyone who wants to observe without influencing estimates.</p>
+            <ul>
+                <li>Check <strong>"Join as spectator"</strong> on the name entry page.</li>
+                <li>Spectators can see all votes and results but <strong>cannot vote</strong>.</li>
+                <li>Spectators appear in a separate <strong>"Spectators" panel</strong> with a &#128065; badge.</li>
+                <li>Spectator votes are <strong>excluded from all statistics</strong>.</li>
+                <li>Your spectator preference is remembered for next time.</li>
+            </ul>
+        </div>
+
+        <!-- Emoji Reactions -->
+        <div class="help-section">
+            <h2>Emoji Reactions</h2>
+            <p>React to the results after votes are revealed.</p>
+            <ul>
+                <li>A floating reaction bar appears in the <strong>bottom-right corner</strong> after reveal.</li>
+                <li>Available reactions: &#128077; &#129300; &#128561; &#127919; &#128128;</li>
+                <li>Reactions are <strong>visible to all participants</strong> — emojis float up the screen in real-time.</li>
+                <li>Reactions reset when a new round starts.</li>
+            </ul>
+        </div>
+
+        <!-- Keyboard Shortcuts -->
+        <div class="help-section">
+            <h2>Keyboard Shortcuts</h2>
+            <p>Vote and control rounds without touching the mouse.</p>
+            <ul>
+                <li><span class="kbd">0</span> &ndash; <span class="kbd">9</span> &mdash; Vote by card index (0=first card, 9=last card)</li>
+                <li><span class="kbd">R</span> &mdash; Reveal votes (same as "Show Votes" button)</li>
+                <li><span class="kbd">N</span> &mdash; New round (same as "New Round" button)</li>
+            </ul>
+            <p>Shortcuts are disabled when typing in input fields or when in spectator mode.</p>
+        </div>
+
+        <!-- Confetti -->
+        <div class="help-section">
+            <h2>Confetti Celebration</h2>
+            <p>When votes are revealed and <strong>every role group is in full agreement</strong>, confetti rains down to celebrate the consensus. No action needed — it just happens when the team aligns.</p>
+        </div>
+
+        <!-- Voting Scale -->
+        <div class="help-section">
+            <h2>Voting Scale</h2>
+            <p>PokerFace uses a modified Fibonacci sequence:</p>
+            <ul>
+                <li><strong>0, 1, 2, 3, 5, 8, 13, 21</strong> &mdash; Standard Fibonacci story points</li>
+                <li><strong>?</strong> &mdash; "I don't have enough information to estimate"</li>
+                <li><strong>&#9749;</strong> &mdash; "I need a break" or "this is not estimable"</li>
+            </ul>
+            <p>Non-numeric votes (? and &#9749;) are excluded from average calculations.</p>
+        </div>
+
+        <!-- Consensus -->
+        <div class="help-section">
+            <h2>Consensus Indicators</h2>
+            <p>After reveal, each role group shows a consensus status:</p>
+            <ul>
+                <li><strong style="color: #22c55e;">&#9989; Agreement</strong> &mdash; Everyone voted the same value.</li>
+                <li><strong style="color: #f59e0b;">&#8776; Close</strong> &mdash; Votes are within 3 points of each other.</li>
+                <li><strong style="color: #ef4444;">&#9888; Discuss</strong> &mdash; Votes are spread apart — time to talk it out.</li>
+            </ul>
+        </div>
+    </div>
+
+    <footer class="site-footer">
+        <p>Estimated at 1 point. Took 13. Shipped anyway by <a href="https://pawangujral.dev/" target="_blank" rel="noopener">Pawan Gujral</a></p>
+    </footer>
+</body>
+</html>

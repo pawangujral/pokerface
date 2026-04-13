@@ -69,8 +69,20 @@
                 <h2>What's your name?</h2>
                 <div class="name-group">
                     <input type="text" id="input-name" placeholder="Enter your name" maxlength="30" autocomplete="off">
-                    <button id="btn-enter" class="btn btn-primary">Enter</button>
                 </div>
+                <h2 class="role-heading">What's your role?</h2>
+                <div class="role-selector" id="role-selector">
+                    <button type="button" class="role-chip" data-role="Developer">Developer</button>
+                    <button type="button" class="role-chip" data-role="QA">QA</button>
+                    <button type="button" class="role-chip" data-role="DevOps/SRE">DevOps/SRE</button>
+                    <button type="button" class="role-chip" data-role="Designer">Designer</button>
+                    <button type="button" class="role-chip" data-role="Business">Business</button>
+                </div>
+                <label class="spectator-toggle">
+                    <input type="checkbox" id="chk-spectator">
+                    <span>Join as spectator (watch only)</span>
+                </label>
+                <button id="btn-enter" class="btn btn-primary btn-large" disabled>Enter</button>
             </div>
         </div>
     </div>
@@ -83,39 +95,44 @@
                 <div class="session-info">
                     <span id="session-code-display" class="session-code"></span>
                     <button id="btn-copy-link" class="btn btn-small" title="Copy invite link">&#128203; Copy Link</button>
+                    <a href="help.html" target="_blank" class="btn btn-small" title="Help">? Help</a>
                 </div>
             </header>
 
             <div class="session-layout">
                 <!-- Participants Panel -->
-                <div class="participants-panel">
-                    <h3>Participants</h3>
-                    <ul id="participants-list"></ul>
-                </div>
+                <div id="participants-container" class="participants-container"></div>
 
                 <!-- Main Area -->
                 <div class="main-area">
-                    <!-- Action Buttons -->
+                    <!-- Timer + Action Buttons -->
                     <div class="actions">
                         <button id="btn-reveal" class="btn btn-primary">Show Votes</button>
                         <button id="btn-new-round" class="btn btn-secondary">New Round</button>
+                        <div class="timer-group">
+                            <select id="timer-select">
+                                <option value="">Timer</option>
+                                <option value="30">0:30</option>
+                                <option value="60">1:00</option>
+                                <option value="90">1:30</option>
+                                <option value="120">2:00</option>
+                            </select>
+                            <button id="btn-timer" class="btn btn-small">Start</button>
+                        </div>
+                    </div>
+
+                    <!-- Timer Display -->
+                    <div id="timer-bar" class="timer-bar hidden">
+                        <div id="timer-fill" class="timer-fill"></div>
+                        <span id="timer-text" class="timer-text">0:00</span>
                     </div>
 
                     <!-- Results (shown after reveal) -->
-                    <div id="results-panel" class="results-panel hidden">
-                        <div class="result-stat">
-                            <span class="stat-label">Average</span>
-                            <span id="stat-average" class="stat-value">-</span>
-                        </div>
-                        <div class="result-stat">
-                            <span class="stat-label">Consensus</span>
-                            <span id="stat-consensus" class="stat-value">-</span>
-                        </div>
-                    </div>
+                    <div id="results-panel" class="results-panel hidden"></div>
 
                     <!-- Estimation Cards -->
-                    <div class="estimation-section">
-                        <h3>Pick your estimate</h3>
+                    <div id="estimation-section" class="estimation-section">
+                        <h3>Pick your estimate <span class="kbd-hint">(or press 0-9 keys)</span></h3>
                         <div id="estimation-cards" class="estimation-cards">
                             <!-- Cards injected by JS -->
                         </div>
@@ -125,8 +142,25 @@
         </div>
     </div>
 
+    <!-- Emoji Reactions (floating, bottom-right) -->
+    <div id="reactions-bar" class="reactions-bar hidden">
+        <button class="reaction-btn" data-emoji="👍">👍</button>
+        <button class="reaction-btn" data-emoji="🤔">🤔</button>
+        <button class="reaction-btn" data-emoji="😱">😱</button>
+        <button class="reaction-btn" data-emoji="🎯">🎯</button>
+        <button class="reaction-btn" data-emoji="💀">💀</button>
+    </div>
+    <div id="reaction-floats" class="reaction-floats"></div>
+
+    <!-- Confetti canvas -->
+    <canvas id="confetti-canvas" class="confetti-canvas"></canvas>
+
     <!-- Toast notification -->
     <div id="toast" class="toast hidden"></div>
+
+    <footer class="site-footer">
+        <p>Estimated at 1 point. Took 13. Shipped anyway by <a href="https://pawangujral.dev/" target="_blank" rel="noopener">Pawan Gujral</a></p>
+    </footer>
 
     <script type="module" src="js/app.js"></script>
 </body>

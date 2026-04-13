@@ -33,6 +33,14 @@ function saveName(name) {
     localStorage.setItem('poker_name', name);
 }
 
+function getSavedRole() {
+    return localStorage.getItem('poker_role') || '';
+}
+
+function saveRole(role) {
+    localStorage.setItem('poker_role', role);
+}
+
 // ─── Session operations ───
 
 async function createSession() {
@@ -50,12 +58,14 @@ async function sessionExists(sessionId) {
     return snap.exists();
 }
 
-async function joinSession(sessionId, name) {
+async function joinSession(sessionId, name, role, spectator = false) {
     const pid = getParticipantId();
     const pRef = ref(db, `sessions/${sessionId}/participants/${pid}`);
     await set(pRef, {
         name,
+        role: role || null,
         vote: null,
+        spectator: spectator || false,
         joinedAt: serverTimestamp(),
     });
     // Clean up on disconnect
@@ -75,6 +85,23 @@ async function castVote(sessionId, participantId, value) {
     await set(voteRef, value);
 }
 
+async function sendReaction(sessionId, participantId, emoji) {
+    const reactRef = ref(db, `sessions/${sessionId}/reactions/${participantId}`);
+    await set(reactRef, { emoji, ts: serverTimestamp() });
+}
+
+function subscribeReactions(sessionId, callback) {
+    const reactRef = ref(db, `sessions/${sessionId}/reactions`);
+    return onValue(reactRef, (snap) => {
+        callback(snap.val());
+    });
+}
+
+async function setTimer(sessionId, endsAt) {
+    const timerRef = ref(db, `sessions/${sessionId}/timer`);
+    await set(timerRef, endsAt);
+}
+
 async function revealVotes(sessionId) {
     const statusRef = ref(db, `sessions/${sessionId}/status`);
     await set(statusRef, 'revealed');
@@ -85,7 +112,11 @@ async function newRound(sessionId) {
     const snap = await get(ref(db, `sessions/${sessionId}/participants`));
     if (!snap.exists()) return;
 
-    const updates = { [`sessions/${sessionId}/status`]: 'voting' };
+    const updates = {
+        [`sessions/${sessionId}/status`]: 'voting',
+        [`sessions/${sessionId}/timer`]: null,
+        [`sessions/${sessionId}/reactions`]: null,
+    };
     snap.forEach((child) => {
         updates[`sessions/${sessionId}/participants/${child.key}/vote`] = null;
     });
@@ -120,11 +151,16 @@ export {
     getParticipantId,
     getSavedName,
     saveName,
+    getSavedRole,
+    saveRole,
     createSession,
     sessionExists,
     joinSession,
     subscribeSession,
     castVote,
+    sendReaction,
+    subscribeReactions,
+    setTimer,
     revealVotes,
     newRound,
     cleanupExpiredSessions,
