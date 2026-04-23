@@ -1,25 +1,31 @@
 // App — Router, UI wiring, and initialization
-import {
-    FIBONACCI,
-    getParticipantId,
-    getSavedName,
-    saveName,
-    getSavedRole,
-    saveRole,
-    createSession,
-    sessionExists,
-    joinSession,
-    subscribeSession,
-    castVote,
-    sendReaction,
-    subscribeReactions,
-    setTimer,
-    clearTimer,
-    revealVotes,
-    newRound,
-    cleanupExpiredSessions,
-} from './session.js';
-import { analytics, logEvent, db, authReady } from './firebase.js';
+import * as session from './session.js';
+import * as firebase from './firebase.js';
+
+const FIBONACCI = session.FIBONACCI ?? session.default?.FIBONACCI ?? ['0', '1', '2', '3', '5', '8', '13', '21', '?', '\u2615'];
+const getParticipantId = session.getParticipantId ?? session.default?.getParticipantId;
+const getSavedName = session.getSavedName ?? session.default?.getSavedName;
+const saveName = session.saveName ?? session.default?.saveName;
+const getSavedRole = session.getSavedRole ?? session.default?.getSavedRole;
+const saveRole = session.saveRole ?? session.default?.saveRole;
+const createSession = session.createSession ?? session.default?.createSession;
+const sessionExists = session.sessionExists ?? session.default?.sessionExists;
+const joinSession = session.joinSession ?? session.default?.joinSession;
+const subscribeSession = session.subscribeSession ?? session.default?.subscribeSession;
+const castVote = session.castVote ?? session.default?.castVote;
+const sendReaction = session.sendReaction ?? session.default?.sendReaction;
+const subscribeReactions = session.subscribeReactions ?? session.default?.subscribeReactions;
+const setTimer = session.setTimer ?? session.default?.setTimer;
+const clearTimer = session.clearTimer ?? session.default?.clearTimer;
+const revealVotes = session.revealVotes ?? session.default?.revealVotes;
+const newRound = session.newRound ?? session.default?.newRound;
+const cleanupExpiredSessions = session.cleanupExpiredSessions ?? session.default?.cleanupExpiredSessions;
+
+const analytics = firebase.analytics ?? firebase.default?.analytics ?? null;
+const logEvent = firebase.logEvent ?? firebase.default?.logEvent ?? (() => {});
+const db = firebase.db ?? firebase.default?.db ?? null;
+const authReady = firebase.authReady ?? firebase.default?.authReady ?? Promise.resolve(null);
+const ensureAuthenticated = firebase.ensureAuthenticated ?? firebase.default?.ensureAuthenticated ?? (async () => authReady);
 
 // ─── DOM refs ───
 const $landing   = document.getElementById('landing-page');
@@ -98,6 +104,30 @@ function toast(msg) {
     $t._timer = setTimeout(() => $t.classList.add('hidden'), 2500);
 }
 
+function isPermissionDeniedError(err) {
+    const code = String(err?.code || '');
+    const message = String(err?.message || err || '');
+    return code === 'PERMISSION_DENIED' || code === 'permission-denied' || /permission denied/i.test(message);
+}
+
+function handleFirebaseError(err, fallbackMessage = 'Something went wrong') {
+    if (isPermissionDeniedError(err)) {
+        toast('Permission denied. Please refresh and rejoin the session.');
+    } else {
+        toast(fallbackMessage);
+    }
+    console.error(err);
+}
+
+async function ensureAuth() {
+    const user = await ensureAuthenticated();
+    if (!user) {
+        toast('Authentication failed. Please refresh and try again.');
+        return false;
+    }
+    return true;
+}
+
 function getSessionIdFromHash() {
     const match = location.hash.match(/^#\/session\/(.+)$/);
     return match ? match[1] : null;
@@ -117,7 +147,9 @@ function renderEstCards(selectedValue, disabled) {
         if (val === selectedValue) card.classList.add('selected');
         if (disabled || isSpectator) card.classList.add('disabled');
         card.dataset.index = idx;
-        card.addEventListener('click', () => onVote(val));
+        card.addEventListener('click', () => {
+            onVote(val).catch((err) => handleFirebaseError(err, 'Failed to cast vote'));
+        });
         $estCards.appendChild(card);
     });
 }
@@ -500,27 +532,42 @@ function startTimerDisplay(endsAt) {
     timerInterval = setInterval(tick, 250);
 }
 
-$btnTimer.addEventListener('click', () => {
+$btnTimer.addEventListener('click', async () => {
     const secs = parseInt($timerSelect.value);
     if (!secs || !currentSessionId) return;
+    if (!await ensureAuth()) return;
     const endsAt = Date.now() + secs * 1000;
-    setTimer(currentSessionId, endsAt);
+    try {
+        await setTimer(currentSessionId, endsAt);
+    } catch (err) {
+        handleFirebaseError(err, 'Failed to start timer');
+    }
 });
 
-$btnTimerStop.addEventListener('click', () => {
+$btnTimerStop.addEventListener('click', async () => {
     if (!currentSessionId) return;
+    if (!await ensureAuth()) return;
     clearInterval(timerInterval);
     $timerBar.classList.add('hidden');
-    clearTimer(currentSessionId);
+    try {
+        await clearTimer(currentSessionId);
+    } catch (err) {
+        handleFirebaseError(err, 'Failed to stop timer');
+    }
 });
 
 // ─── Emoji reactions ───
 const seenReactions = new Set();
 
-$reactionsBar.addEventListener('click', (e) => {
+$reactionsBar.addEventListener('click', async (e) => {
     const btn = e.target.closest('.reaction-btn');
     if (!btn || !currentSessionId || !currentPid) return;
-    sendReaction(currentSessionId, currentPid, btn.dataset.emoji);
+    if (!await ensureAuth()) return;
+    try {
+        await sendReaction(currentSessionId, currentPid, btn.dataset.emoji);
+    } catch (err) {
+        handleFirebaseError(err, 'Failed to send reaction');
+    }
 });
 
 function onReactionsUpdate(data) {
@@ -549,7 +596,7 @@ const KEY_MAP = {
     '5': 5, '6': 6, '7': 7, '8': 8, '9': 9,
 };
 
-document.addEventListener('keydown', (e) => {
+document.addEventListener('keydown', async (e) => {
     // Don't capture when typing in inputs
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
     // Only on session page
@@ -559,7 +606,11 @@ document.addEventListener('keydown', (e) => {
     const idx = KEY_MAP[e.key];
     if (idx !== undefined && idx < FIBONACCI.length) {
         e.preventDefault();
-        onVote(FIBONACCI[idx]);
+        try {
+            await onVote(FIBONACCI[idx]);
+        } catch (err) {
+            handleFirebaseError(err, 'Failed to cast vote');
+        }
         return;
     }
 
@@ -567,12 +618,24 @@ document.addEventListener('keydown', (e) => {
         e.preventDefault();
         if (currentSessionId && !$btnReveal.disabled) {
             logEvent(analytics, 'votes_revealed');
-            revealVotes(currentSessionId);
+            if (!await ensureAuth()) return;
+            try {
+                await revealVotes(currentSessionId);
+            } catch (err) {
+                handleFirebaseError(err, 'Failed to reveal votes');
+            }
         }
     }
     if (e.key === 'n' || e.key === 'N') {
         e.preventDefault();
-        if (currentSessionId) newRound(currentSessionId);
+        if (currentSessionId) {
+            if (!await ensureAuth()) return;
+            try {
+                await newRound(currentSessionId);
+            } catch (err) {
+                handleFirebaseError(err, 'Failed to start new round');
+            }
+        }
     }
 });
 
@@ -634,6 +697,7 @@ function onSessionUpdate(data) {
 // ─── Event handlers ───
 async function onVote(value) {
     if (!currentSessionId || !currentPid || isSpectator) return;
+    if (!await ensureAuth()) return;
     logEvent(analytics, 'vote_cast', { value });
     await castVote(currentSessionId, currentPid, value);
 }
@@ -660,6 +724,7 @@ async function enterSession(sessionId) {
     selectedRole = role;
     currentPid = getParticipantId();
     isSpectator = localStorage.getItem('poker_spectator') === 'true';
+    if (!await ensureAuth()) return;
     await joinSession(sessionId, name, role, isSpectator);
     showPage($session);
 
@@ -676,31 +741,29 @@ $btnCreate.addEventListener('click', async () => {
     }
     $btnCreate.disabled = true;
     try {
-        const user = await authReady;
-        if (!user) {
-            toast('Authentication failed. Please refresh and try again.');
-            return;
-        }
+        if (!await ensureAuth()) return;
         const id = await createSession();
         logEvent(analytics, 'session_created', { session_id: id });
         await enterSession(id);
     } catch (e) {
-        toast('Failed to create session');
-        console.error(e);
+        handleFirebaseError(e, 'Failed to create session');
     } finally {
         $btnCreate.disabled = false;
     }
 });
 
 $btnJoin.addEventListener('click', async () => {
-    const code = $inputCode.value.trim();
-    if (!code) { toast('Enter a session code'); return; }
-    const user = await authReady;
-    if (!user) { toast('Authentication failed. Please refresh.'); return; }
-    const exists = await sessionExists(code);
-    if (!exists) { toast('Session not found'); return; }
-    logEvent(analytics, 'session_joined', { session_id: code });
-    await enterSession(code);
+    try {
+        const code = $inputCode.value.trim();
+        if (!code) { toast('Enter a session code'); return; }
+        if (!await ensureAuth()) return;
+        const exists = await sessionExists(code);
+        if (!exists) { toast('Session not found'); return; }
+        logEvent(analytics, 'session_joined', { session_id: code });
+        await enterSession(code);
+    } catch (err) {
+        handleFirebaseError(err, 'Failed to join session');
+    }
 });
 
 $inputCode.addEventListener('keydown', (e) => {
@@ -708,35 +771,50 @@ $inputCode.addEventListener('keydown', (e) => {
 });
 
 $btnEnter.addEventListener('click', async () => {
-    const name = $inputName.value.trim();
-    if (!name) { toast('Enter your name'); return; }
-    if (!selectedRole) { toast('Choose your role'); return; }
-    saveName(name);
-    saveRole(selectedRole);
-    isSpectator = $chkSpectator.checked;
-    localStorage.setItem('poker_spectator', isSpectator);
-    currentPid = getParticipantId();
-    await joinSession(currentSessionId, name, selectedRole, isSpectator);
-    showPage($session);
-    if (unsubscribe) unsubscribe();
-    unsubscribe = subscribeSession(currentSessionId, onSessionUpdate);
-    if (unsubReactions) unsubReactions();
-    unsubReactions = subscribeReactions(currentSessionId, onReactionsUpdate);
+    try {
+        const name = $inputName.value.trim();
+        if (!name) { toast('Enter your name'); return; }
+        if (!selectedRole) { toast('Choose your role'); return; }
+        saveName(name);
+        saveRole(selectedRole);
+        isSpectator = $chkSpectator.checked;
+        localStorage.setItem('poker_spectator', isSpectator);
+        currentPid = getParticipantId();
+        if (!await ensureAuth()) return;
+        await joinSession(currentSessionId, name, selectedRole, isSpectator);
+        showPage($session);
+        if (unsubscribe) unsubscribe();
+        unsubscribe = subscribeSession(currentSessionId, onSessionUpdate);
+        if (unsubReactions) unsubReactions();
+        unsubReactions = subscribeReactions(currentSessionId, onReactionsUpdate);
+    } catch (err) {
+        handleFirebaseError(err, 'Failed to enter session');
+    }
 });
 
 $inputName.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') $btnEnter.click();
 });
 
-$btnReveal.addEventListener('click', () => {
-    if (currentSessionId) {
-        logEvent(analytics, 'votes_revealed');
-        revealVotes(currentSessionId);
+$btnReveal.addEventListener('click', async () => {
+    if (!currentSessionId) return;
+    logEvent(analytics, 'votes_revealed');
+    if (!await ensureAuth()) return;
+    try {
+        await revealVotes(currentSessionId);
+    } catch (err) {
+        handleFirebaseError(err, 'Failed to reveal votes');
     }
 });
 
-$btnNewRound.addEventListener('click', () => {
-    if (currentSessionId) newRound(currentSessionId);
+$btnNewRound.addEventListener('click', async () => {
+    if (!currentSessionId) return;
+    if (!await ensureAuth()) return;
+    try {
+        await newRound(currentSessionId);
+    } catch (err) {
+        handleFirebaseError(err, 'Failed to start new round');
+    }
 });
 
 $btnCopyLink.addEventListener('click', () => {
@@ -762,13 +840,17 @@ async function init() {
 
     const hashId = getSessionIdFromHash();
     if (hashId) {
-        const exists = await sessionExists(hashId);
-        if (exists) {
-            await enterSession(hashId);
-            return;
+        try {
+            const exists = await sessionExists(hashId);
+            if (exists) {
+                await enterSession(hashId);
+                return;
+            }
+            toast('Session not found');
+            location.hash = '';
+        } catch (err) {
+            handleFirebaseError(err, 'Failed to load session');
         }
-        toast('Session not found');
-        location.hash = '';
     }
 
     showPage($landing);
@@ -777,11 +859,17 @@ async function init() {
 window.addEventListener('hashchange', async () => {
     const hashId = getSessionIdFromHash();
     if (hashId && hashId !== currentSessionId) {
-        const exists = await sessionExists(hashId);
-        if (exists) {
-            await enterSession(hashId);
-        } else {
-            toast('Session not found');
+        try {
+            const exists = await sessionExists(hashId);
+            if (exists) {
+                await enterSession(hashId);
+            } else {
+                toast('Session not found');
+                location.hash = '';
+                showPage($landing);
+            }
+        } catch (err) {
+            handleFirebaseError(err, 'Failed to open session');
             location.hash = '';
             showPage($landing);
         }

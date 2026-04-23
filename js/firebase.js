@@ -29,16 +29,38 @@ const app = initializeApp(firebaseConfig);
 
 // Anonymous auth — proves the user is running the real app, not a script
 const auth = getAuth(app);
-const authReady = new Promise((resolve) => {
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            resolve(user);
-        } else {
-            signInAnonymously(auth).catch((err) => {
-                console.error('Anonymous auth failed:', err.message);
-                resolve(null);
-            });
+
+async function ensureAuthenticated() {
+    try {
+        if (auth.currentUser) {
+            // Force token retrieval once so subsequent DB writes have auth context.
+            await auth.currentUser.getIdToken();
+            return auth.currentUser;
         }
+        const cred = await signInAnonymously(auth);
+        await cred.user.getIdToken();
+        return cred.user;
+    } catch (err) {
+        console.error('Anonymous auth failed:', err.message || err);
+        return null;
+    }
+}
+
+const authReady = new Promise((resolve) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            try {
+                await user.getIdToken();
+            } catch (err) {
+                console.warn('Failed to prefetch auth token:', err.message || err);
+            }
+            unsubscribe();
+            resolve(user);
+            return;
+        }
+        const signedInUser = await ensureAuthenticated();
+        unsubscribe();
+        resolve(signedInUser);
     });
 });
 
@@ -66,6 +88,7 @@ function logEvent(analyticsInstance, ...args) {
 export {
     db,
     authReady,
+    ensureAuthenticated,
     ref,
     set,
     get,
