@@ -444,6 +444,32 @@ input[type="text"]::placeholder {
     text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 
+.btn-timer-stop {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.4);
+    color: white;
+    font-size: 0.85rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: background 0.2s ease;
+    z-index: 1;
+}
+
+.btn-timer-stop:hover {
+    background: var(--danger);
+}
+
 /* ── Reactions ── */
 .reactions-bar {
     position: fixed;
@@ -632,6 +658,196 @@ input[type="text"]::placeholder {
 .est-card.disabled {
     opacity: 0.5;
     pointer-events: none;
+}
+
+/* ── Spectator Waiting View ── */
+.spectator-waiting {
+    text-align: center;
+    padding: 36px 24px 28px;
+    background: linear-gradient(135deg, var(--bg-card) 0%, rgba(99, 102, 241, 0.06) 100%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+}
+
+/* ── Circular progress ring ── */
+.spectator-ring-wrap {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 16px;
+}
+
+.spectator-ring {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.spectator-ring-track {
+    fill: none;
+    stroke: var(--bg);
+    stroke-width: 8;
+}
+
+.spectator-ring-value {
+    fill: none;
+    stroke: var(--primary);
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.4s ease;
+}
+
+.spectator-ring-value.all-voted {
+    stroke: var(--success);
+}
+
+.spectator-ring-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    white-space: nowrap;
+    /* vertically center the baseline group */
+    padding-top: 46px;
+}
+
+.spectator-ring-big {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1;
+    transition: color 0.4s ease;
+}
+
+.spectator-ring-big.all-voted {
+    color: var(--success);
+}
+
+.spectator-ring-sep {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin: 0 2px;
+}
+
+.spectator-ring-small {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+/* ── Headline ── */
+.spectator-headline {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+}
+
+/* ── Voter avatar bubbles ── */
+.spectator-avatars {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.spectator-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    border: 2px solid var(--border);
+    background: var(--bg);
+    color: var(--text-muted);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.spectator-avatar.voted {
+    border-color: var(--primary);
+    background: rgba(99, 102, 241, 0.15);
+    color: var(--primary-hover);
+    animation: avatar-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes avatar-pop {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.25); }
+    100% { transform: scale(1); }
+}
+
+.spectator-avatar.voted::after {
+    content: '\2713';
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    font-size: 0.55rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+/* ── Role chips ── */
+.spectator-role-status {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+}
+
+.spectator-role-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    transition: border-color 0.3s ease, color 0.3s ease;
+}
+
+.spectator-role-chip .chip-count {
+    font-weight: 700;
+    color: var(--text);
+}
+
+.spectator-role-chip .chip-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--secondary);
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.spectator-role-chip.complete {
+    border-color: rgba(34, 197, 94, 0.3);
+}
+
+.spectator-role-chip.complete .chip-dot {
+    background: var(--success);
+    box-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
+}
+
+.spectator-role-chip.complete .chip-count {
+    color: var(--success);
 }
 
 /* ── Toast ── */

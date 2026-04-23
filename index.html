@@ -125,10 +125,35 @@
                     <div id="timer-bar" class="timer-bar hidden">
                         <div id="timer-fill" class="timer-fill"></div>
                         <span id="timer-text" class="timer-text">0:00</span>
+                        <button id="btn-timer-stop" class="btn-timer-stop" title="Stop timer">&times;</button>
                     </div>
 
                     <!-- Results (shown after reveal) -->
                     <div id="results-panel" class="results-panel hidden"></div>
+
+                    <!-- Spectator waiting view (shown to spectators during voting) -->
+                    <div id="spectator-waiting" class="spectator-waiting hidden">
+                        <!-- Circular progress ring -->
+                        <div class="spectator-ring-wrap">
+                            <svg class="spectator-ring" viewBox="0 0 120 120">
+                                <circle class="spectator-ring-track" cx="60" cy="60" r="52" />
+                                <circle id="spectator-ring-progress" class="spectator-ring-value" cx="60" cy="60" r="52"
+                                        stroke-dasharray="326.73" stroke-dashoffset="326.73" />
+                            </svg>
+                            <div class="spectator-ring-label">
+                                <span id="spectator-voted-count" class="spectator-ring-big">0</span>
+                                <span class="spectator-ring-sep">/</span>
+                                <span id="spectator-total-count" class="spectator-ring-small">0</span>
+                            </div>
+                        </div>
+                        <p class="spectator-headline" id="spectator-headline">Waiting for votes...</p>
+
+                        <!-- Voter avatars grid -->
+                        <div id="spectator-avatars" class="spectator-avatars"></div>
+
+                        <!-- Per-role breakdown -->
+                        <div id="spectator-role-status" class="spectator-role-status"></div>
+                    </div>
 
                     <!-- Estimation Cards -->
                     <div id="estimation-section" class="estimation-section">

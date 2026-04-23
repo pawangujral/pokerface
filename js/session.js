@@ -4,6 +4,7 @@ import {
 } from './firebase.js';
 
 const FIBONACCI = ['0', '1', '2', '3', '5', '8', '13', '21', '?', '\u2615'];
+const SESSION_TTL_MS = 3 * 60 * 60 * 1000; // 3 hours
 
 function generateSessionId() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
@@ -48,6 +49,7 @@ async function createSession() {
     const sessionRef = ref(db, `sessions/${sessionId}`);
     await set(sessionRef, {
         createdAt: serverTimestamp(),
+        expiresAt: Date.now() + SESSION_TTL_MS,
         status: 'voting',
     });
     return sessionId;
@@ -55,7 +57,15 @@ async function createSession() {
 
 async function sessionExists(sessionId) {
     const snap = await get(ref(db, `sessions/${sessionId}`));
-    return snap.exists();
+    if (!snap.exists()) return false;
+    const data = snap.val();
+    const expiry = data.expiresAt || (data.createdAt ? data.createdAt + SESSION_TTL_MS : 0);
+    if (expiry && Date.now() > expiry) {
+        // Expired — clean it up and report as non-existent
+        await remove(ref(db, `sessions/${sessionId}`));
+        return false;
+    }
+    return true;
 }
 
 async function joinSession(sessionId, name, role, spectator = false) {
@@ -102,6 +112,11 @@ async function setTimer(sessionId, endsAt) {
     await set(timerRef, endsAt);
 }
 
+async function clearTimer(sessionId) {
+    const timerRef = ref(db, `sessions/${sessionId}/timer`);
+    await set(timerRef, null);
+}
+
 async function revealVotes(sessionId) {
     const statusRef = ref(db, `sessions/${sessionId}/status`);
     await set(statusRef, 'revealed');
@@ -124,18 +139,19 @@ async function newRound(sessionId) {
 }
 
 async function cleanupExpiredSessions() {
-    // Remove sessions older than 24 hours (best-effort on page load)
+    // Remove sessions past their expiresAt (best-effort on page load)
     const sessionsRef = ref(db, 'sessions');
     const snap = await get(sessionsRef);
     if (!snap.exists()) return;
 
     const now = Date.now();
-    const DAY = 24 * 60 * 60 * 1000;
     const updates = {};
 
     snap.forEach((child) => {
         const data = child.val();
-        if (data.createdAt && now - data.createdAt > DAY) {
+        // Use expiresAt if available, otherwise fall back to createdAt + TTL
+        const expiry = data.expiresAt || (data.createdAt ? data.createdAt + SESSION_TTL_MS : 0);
+        if (expiry && now > expiry) {
             updates[`sessions/${child.key}`] = null;
         }
     });
@@ -161,6 +177,7 @@ export {
     sendReaction,
     subscribeReactions,
     setTimer,
+    clearTimer,
     revealVotes,
     newRound,
     cleanupExpiredSessions,

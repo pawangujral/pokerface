@@ -14,11 +14,12 @@ import {
     sendReaction,
     subscribeReactions,
     setTimer,
+    clearTimer,
     revealVotes,
     newRound,
     cleanupExpiredSessions,
 } from './session.js';
-import { analytics, logEvent, db } from './firebase.js';
+import { analytics, logEvent, db, authReady } from './firebase.js';
 
 // ─── DOM refs ───
 const $landing   = document.getElementById('landing-page');
@@ -45,8 +46,16 @@ const $btnTimer      = document.getElementById('btn-timer');
 const $timerBar      = document.getElementById('timer-bar');
 const $timerFill     = document.getElementById('timer-fill');
 const $timerText     = document.getElementById('timer-text');
+const $btnTimerStop  = document.getElementById('btn-timer-stop');
 const $reactionsBar  = document.getElementById('reactions-bar');
 const $reactionFloats = document.getElementById('reaction-floats');
+const $spectatorWaiting = document.getElementById('spectator-waiting');
+const $spectatorRingProgress = document.getElementById('spectator-ring-progress');
+const $spectatorVotedCount = document.getElementById('spectator-voted-count');
+const $spectatorTotalCount = document.getElementById('spectator-total-count');
+const $spectatorHeadline = document.getElementById('spectator-headline');
+const $spectatorAvatars = document.getElementById('spectator-avatars');
+const $spectatorRoleStatus = document.getElementById('spectator-role-status');
 const $confetti      = document.getElementById('confetti-canvas');
 
 let currentSessionId = null;
@@ -314,10 +323,13 @@ function computeStats(participants) {
         if (!stats.isAgreement) allAgreement = false;
     });
 
-    const totalText = !hasAnyVotes ? '-' : (total % 1 === 0 ? String(total) : total.toFixed(1));
-    $results.appendChild(buildStatCard('Total Estimate', { avg: totalText, avgLabel: 'Points', consensus: '', consensusColor: '' }));
-
     if (orderedRoles.length > 1) {
+        const totalText = !hasAnyVotes ? '-' : (total % 1 === 0 ? String(total) : total.toFixed(1));
+        $results.appendChild(buildStatCard('Total Estimate', { avg: totalText, avgLabel: 'Points', consensus: '', consensusColor: '' }));
+        orderedRoles.forEach(role => {
+            $results.appendChild(buildStatCard(role, roleStats[role]));
+        });
+    } else {
         orderedRoles.forEach(role => {
             $results.appendChild(buildStatCard(role, roleStats[role]));
         });
@@ -327,6 +339,74 @@ function computeStats(participants) {
     if (hasAnyVotes && allAgreement && all.length > 1) {
         launchConfetti();
     }
+}
+
+// ─── Spectator progress ───
+const RING_CIRCUMFERENCE = 326.73; // 2 * PI * 52
+
+function updateSpectatorProgress(participants) {
+    const entries = Object.entries(participants || {});
+    const voterEntries = entries.filter(([, p]) => !p.spectator);
+    const voted = voterEntries.filter(([, p]) => p.vote != null).length;
+    const total = voterEntries.length;
+    const allDone = voted === total && total > 0;
+
+    // Ring progress
+    const pct = total > 0 ? voted / total : 0;
+    const offset = RING_CIRCUMFERENCE * (1 - pct);
+    $spectatorRingProgress.style.strokeDashoffset = offset;
+    $spectatorRingProgress.classList.toggle('all-voted', allDone);
+
+    // Counter
+    $spectatorVotedCount.textContent = voted;
+    $spectatorVotedCount.classList.toggle('all-voted', allDone);
+    $spectatorTotalCount.textContent = total;
+
+    // Headline
+    if (total === 0) {
+        $spectatorHeadline.textContent = 'No voters yet...';
+    } else if (allDone) {
+        $spectatorHeadline.textContent = 'All votes are in!';
+    } else {
+        const remaining = total - voted;
+        $spectatorHeadline.textContent = remaining === 1
+            ? '1 person still deciding...'
+            : `${remaining} people still deciding...`;
+    }
+
+    // Voter avatar bubbles
+    $spectatorAvatars.innerHTML = '';
+    voterEntries.forEach(([, p]) => {
+        const av = document.createElement('div');
+        av.className = 'spectator-avatar' + (p.vote != null ? ' voted' : '');
+        // Initials from name
+        const parts = (p.name || '?').trim().split(/\s+/);
+        const initials = parts.length >= 2
+            ? parts[0][0] + parts[parts.length - 1][0]
+            : parts[0].slice(0, 2);
+        av.textContent = initials;
+        av.title = p.name || 'Voter';
+        $spectatorAvatars.appendChild(av);
+    });
+
+    // Per-role chips
+    const groups = {};
+    voterEntries.forEach(([, p]) => {
+        const role = p.role || 'Other';
+        if (!groups[role]) groups[role] = { voted: 0, total: 0 };
+        groups[role].total++;
+        if (p.vote != null) groups[role].voted++;
+    });
+
+    const orderedRoles = [...ROLE_ORDER.filter(r => groups[r]), ...Object.keys(groups).filter(r => !ROLE_ORDER.includes(r))];
+    $spectatorRoleStatus.innerHTML = '';
+    orderedRoles.forEach(role => {
+        const g = groups[role];
+        const chip = document.createElement('span');
+        chip.className = 'spectator-role-chip' + (g.voted === g.total ? ' complete' : '');
+        chip.innerHTML = `<span class="chip-dot"></span>${role} <span class="chip-count">${g.voted}/${g.total}</span>`;
+        $spectatorRoleStatus.appendChild(chip);
+    });
 }
 
 // ─── Confetti ───
@@ -427,6 +507,13 @@ $btnTimer.addEventListener('click', () => {
     setTimer(currentSessionId, endsAt);
 });
 
+$btnTimerStop.addEventListener('click', () => {
+    if (!currentSessionId) return;
+    clearInterval(timerInterval);
+    $timerBar.classList.add('hidden');
+    clearTimer(currentSessionId);
+});
+
 // ─── Emoji reactions ───
 const seenReactions = new Set();
 
@@ -518,11 +605,18 @@ function onSessionUpdate(data) {
         $timerBar.classList.add('hidden');
     }
 
-    // Spectator: hide voting UI
+    // Spectator: hide voting UI, show waiting view
     if (isSpectator) {
         $estSection.classList.add('hidden');
+        if (status !== 'revealed') {
+            $spectatorWaiting.classList.remove('hidden');
+            updateSpectatorProgress(participants);
+        } else {
+            $spectatorWaiting.classList.add('hidden');
+        }
     } else {
         $estSection.classList.remove('hidden');
+        $spectatorWaiting.classList.add('hidden');
     }
 
     // Reactions bar + results
@@ -582,6 +676,11 @@ $btnCreate.addEventListener('click', async () => {
     }
     $btnCreate.disabled = true;
     try {
+        const user = await authReady;
+        if (!user) {
+            toast('Authentication failed. Please refresh and try again.');
+            return;
+        }
         const id = await createSession();
         logEvent(analytics, 'session_created', { session_id: id });
         await enterSession(id);
@@ -596,6 +695,8 @@ $btnCreate.addEventListener('click', async () => {
 $btnJoin.addEventListener('click', async () => {
     const code = $inputCode.value.trim();
     if (!code) { toast('Enter a session code'); return; }
+    const user = await authReady;
+    if (!user) { toast('Authentication failed. Please refresh.'); return; }
     const exists = await sessionExists(code);
     if (!exists) { toast('Session not found'); return; }
     logEvent(analytics, 'session_joined', { session_id: code });
@@ -653,6 +754,9 @@ async function init() {
         if (chip) chip.classList.add('active');
     }
     $chkSpectator.checked = localStorage.getItem('poker_spectator') === 'true';
+
+    // Wait for anonymous auth before any database operations
+    await authReady;
 
     cleanupExpiredSessions().catch(() => {});
 

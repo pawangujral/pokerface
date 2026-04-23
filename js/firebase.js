@@ -15,12 +15,33 @@ import {
     onDisconnect,
 } from 'https://www.gstatic.com/firebasejs/11.4.0/firebase-database.js';
 import {
+    getAuth,
+    signInAnonymously,
+    onAuthStateChanged,
+} from 'https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js';
+import {
     getAnalytics,
     logEvent as _logEvent,
 } from 'https://www.gstatic.com/firebasejs/11.4.0/firebase-analytics.js';
 
 import { firebaseConfig } from './firebase-config.js';
 const app = initializeApp(firebaseConfig);
+
+// Anonymous auth — proves the user is running the real app, not a script
+const auth = getAuth(app);
+const authReady = new Promise((resolve) => {
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            resolve(user);
+        } else {
+            signInAnonymously(auth).catch((err) => {
+                console.error('Anonymous auth failed:', err.message);
+                resolve(null);
+            });
+        }
+    });
+});
+
 
 let db;
 try {
@@ -44,6 +65,7 @@ function logEvent(analyticsInstance, ...args) {
 
 export {
     db,
+    authReady,
     ref,
     set,
     get,
