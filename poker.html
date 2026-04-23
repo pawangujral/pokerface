@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PokerFace — Casino Mode | Planning Poker</title>
+    <meta name="description" content="Planning poker with a real casino poker table experience. Throw cards, see chips, feel the game.">
+    <link rel="stylesheet" href="css/poker.css">
+</head>
+<body>
+    <!-- Landing Page -->
+    <div id="landing-page" class="page">
+        <div class="casino-landing">
+            <div class="neon-sign">
+                <h1>POKER<span class="neon-accent">FACE</span></h1>
+                <div class="neon-sub">CASINO EDITION</div>
+            </div>
+            <p class="tagline">Throw your cards on the table</p>
+
+            <div class="landing-card">
+                <button id="btn-create" class="chip-btn chip-gold">
+                    <span class="chip-inner">CREATE TABLE</span>
+                </button>
+                <div class="divider"><span>or join a table</span></div>
+                <div class="join-group">
+                    <input type="text" id="input-session-code" placeholder="Table code" maxlength="20">
+                    <button id="btn-join" class="chip-btn chip-red">
+                        <span class="chip-inner">JOIN</span>
+                    </button>
+                </div>
+            </div>
+
+            <a href="index.html" class="classic-link">Switch to Classic Mode</a>
+        </div>
+    </div>
+
+    <!-- Name Entry Page -->
+    <div id="name-page" class="page hidden">
+        <div class="casino-landing">
+            <div class="neon-sign small">
+                <h1>TAKE A <span class="neon-accent">SEAT</span></h1>
+            </div>
+            <div class="landing-card">
+                <h2>Your player name</h2>
+                <div class="name-group">
+                    <input type="text" id="input-name" placeholder="Enter your name" maxlength="30" autocomplete="off">
+                </div>
+                <h2 class="role-heading">Your role at the table</h2>
+                <div class="role-selector" id="role-selector">
+                    <button type="button" class="role-chip" data-role="Developer">Developer</button>
+                    <button type="button" class="role-chip" data-role="QA">QA</button>
+                    <button type="button" class="role-chip" data-role="DevOps/SRE">DevOps/SRE</button>
+                    <button type="button" class="role-chip" data-role="Designer">Designer</button>
+                    <button type="button" class="role-chip" data-role="Business">Business</button>
+                </div>
+                <label class="spectator-toggle">
+                    <input type="checkbox" id="chk-spectator">
+                    <span>Join as spectator (railbird)</span>
+                </label>
+                <button id="btn-enter" class="chip-btn chip-gold full-width" disabled>
+                    <span class="chip-inner">SIT DOWN</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session Room — The Poker Table -->
+    <div id="session-page" class="page hidden">
+        <div class="table-room">
+            <!-- Header Bar -->
+            <header class="poker-header">
+                <div class="header-left">
+                    <span class="brand">POKER<span class="neon-accent">FACE</span></span>
+                </div>
+                <div class="header-right">
+                    <span id="session-code-display" class="table-code"></span>
+                    <button id="btn-copy-link" class="header-btn" title="Copy invite link">&#128203; Copy</button>
+                    <div class="sound-settings-wrap">
+                        <button id="btn-sound-settings" class="header-btn" title="Audio settings" aria-expanded="false"></button>
+                        <div id="sound-popover" class="sound-popover hidden">
+                            <button id="btn-sound-mute" class="sound-popover-btn" type="button"></button>
+                            <button id="btn-sound-profile-next" class="sound-popover-btn" type="button"></button>
+                            <label class="sound-volume-row" for="input-sound-volume">
+                                <span>Volume</span>
+                                <span id="sound-volume-value">70%</span>
+                            </label>
+                            <input id="input-sound-volume" class="sound-volume-input" type="range" min="0" max="100" step="1" value="70">
+                            <label class="sound-ambient-row">
+                                <input id="chk-ambient-sound" type="checkbox">
+                                <span>Ambient Table Tone</span>
+                            </label>
+                        </div>
+                    </div>
+                    <a href="help.html" target="_blank" class="header-btn">? Help</a>
+                    <a href="index.html" class="header-btn">Classic</a>
+                </div>
+            </header>
+
+            <!-- Timer Display -->
+            <div id="timer-bar" class="timer-bar hidden">
+                <div id="timer-fill" class="timer-fill"></div>
+                <span id="timer-text" class="timer-text">0:00</span>
+                <button id="btn-timer-stop" class="btn-timer-stop" title="Stop timer">&times;</button>
+            </div>
+
+            <!-- THE TABLE -->
+            <div class="poker-table-wrapper">
+                <div class="poker-table">
+                    <div class="felt-pattern"></div>
+
+                    <!-- Dealer Area (actions) -->
+                    <div class="dealer-area">
+                        <button id="btn-reveal" class="dealer-btn">SHOW CARDS</button>
+                        <button id="btn-new-round" class="dealer-btn dealer-btn-secondary">NEW HAND</button>
+                        <div class="timer-group">
+                            <select id="timer-select">
+                                <option value="">Timer</option>
+                                <option value="30">0:30</option>
+                                <option value="60">1:00</option>
+                                <option value="90">1:30</option>
+                                <option value="120">2:00</option>
+                            </select>
+                            <button id="btn-timer" class="dealer-btn dealer-btn-small">Go</button>
+                        </div>
+                    </div>
+
+                    <!-- Live betting pile while players vote -->
+                    <div id="table-bets" class="table-bets hidden"></div>
+
+                    <!-- Pot / Results (center of table) -->
+                    <div id="pot-area" class="pot-area hidden">
+                        <div class="pot-label">THE POT</div>
+                        <div id="pot-results" class="pot-results"></div>
+                    </div>
+
+                    <!-- Spectator waiting view -->
+                    <div id="spectator-waiting" class="spectator-waiting hidden">
+                        <div class="spectator-ring-wrap">
+                            <svg class="spectator-ring" viewBox="0 0 120 120">
+                                <circle class="spectator-ring-track" cx="60" cy="60" r="52" />
+                                <circle id="spectator-ring-progress" class="spectator-ring-value" cx="60" cy="60" r="52"
+                                        stroke-dasharray="326.73" stroke-dashoffset="326.73" />
+                            </svg>
+                            <div class="spectator-ring-label">
+                                <span id="spectator-voted-count" class="spectator-ring-big">0</span>
+                                <span class="spectator-ring-sep">/</span>
+                                <span id="spectator-total-count" class="spectator-ring-small">0</span>
+                            </div>
+                        </div>
+                        <p id="spectator-headline" class="spectator-headline">Waiting for bets...</p>
+                        <div id="spectator-avatars" class="spectator-avatars"></div>
+                        <div id="spectator-role-status" class="spectator-role-status"></div>
+                    </div>
+
+                    <!-- Player seats around table -->
+                    <div id="seats-container" class="seats-container"></div>
+                </div>
+            </div>
+
+            <!-- YOUR HAND (estimation cards) -->
+            <div id="hand-section" class="hand-section">
+                <div class="hand-label">YOUR HAND <span class="kbd-hint">(press 0-9 to play)</span></div>
+                <div id="hand-cards" class="hand-cards">
+                    <!-- Cards injected by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Emoji Reactions -->
+    <div id="reactions-bar" class="reactions-bar hidden">
+        <button class="reaction-btn" data-emoji="👍">👍</button>
+        <button class="reaction-btn" data-emoji="🤔">🤔</button>
+        <button class="reaction-btn" data-emoji="😱">😱</button>
+        <button class="reaction-btn" data-emoji="🎯">🎯</button>
+        <button class="reaction-btn" data-emoji="💀">💀</button>
+    </div>
+    <div id="reaction-floats" class="reaction-floats"></div>
+
+    <!-- Confetti canvas -->
+    <canvas id="confetti-canvas" class="confetti-canvas"></canvas>
+
+    <!-- Toast notification -->
+    <div id="toast" class="toast hidden"></div>
+
+    <!-- Card throw animation container -->
+    <div id="card-throw-container" class="card-throw-container"></div>
+
+    <footer class="site-footer">
+        <p>The house always wins. Built by <a href="https://pawangujral.dev/" target="_blank" rel="noopener">Pawan Gujral</a></p>
+    </footer>
+
+    <script type="module" src="js/poker-app.js"></script>
+</body>
+</html>
